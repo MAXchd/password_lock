@@ -1,5 +1,6 @@
 #include <Keypad.h>            //引用键盘库
 #include <Servo.h>             //引用舵机库
+#include <SevSeg.h>            //引用数码管库
 
 const byte row = 4;            //按键矩阵行数
 const byte col = 4;            //按键矩阵列数
@@ -12,13 +13,11 @@ char keys[row][col] = {
   {'7','8','9','C'},
   {'*','0','#','D'}
 };
-byte rowpin[row] = {10,9,8,7};  //设置行数引脚
-byte colpin[col] = {6,5,4,3};   //设置列数引脚
+byte rowpin[row] = {14,15,16,17};   //设置行数引脚
+byte colpin[col] = {18,19,20,21};   //设置列数引脚
 
 //利用上述定义实例化一个键盘
 Keypad keypad = Keypad(makeKeymap(keys),rowpin,colpin,row,col);
-
-Servo servo;                    //实例化舵机对象
 
 int num = 0;                    //记录当前输入位数
 int wrongnum = 0;               //记录错误次数
@@ -34,19 +33,36 @@ int redpin = 13;
 int greenpin = 12;
 int bluepin = 11;
 
+int buzzerpin = 6;              //设置蜂鸣器引脚
+
+Servo servo;                    //实例化舵机对象
 int servopin = 2;               //设置舵机引脚
+
+SevSeg sevseg;                  //实例化数码管
+byte dignum = 4;                              //数码管位数
+byte digpins[] = {33,27,25,53};               //位引脚
+byte segpins[] = {31,23,49,43,45,29,51,47};   //段引脚
+byte hardwareConfig = COMMON_CATHODE;         //共阴极数码管
+
+
 
 void check();
 void led(char color);
+void setled();
+int resentpassword();
+int resentsetpassword();
 
 void setup() {
   Serial.begin(9600);
 
   pinMode(redpin, OUTPUT);
   pinMode(greenpin, OUTPUT);
-  pinMode(bluepin, OUTPUT);
+  pinMode(bluepin, OUTPUT);      //设置led灯引脚为输出模式
 
   servo.attach(servopin);
+  servo.write(0);                //初始化舵机
+
+  sevseg.begin(hardwareConfig, dignum, digpins, segpins); //初始化数码管
 }
 
 void loop() {
@@ -73,12 +89,14 @@ void loop() {
           if (num < 4){
             password[num] = key;
             num++;
+            sevseg.setNumber(resentpassword());
           }
         }
         if (setpassword){
           if (num < 4){
             temppassword[num] = key;
             num++;
+            sevseg.setNumber(resentsetpassword());
           }
         }
         break;
@@ -105,6 +123,7 @@ void loop() {
             setpassword = false;
             Serial.println("设置完成");
           }
+          sevseg.blank();
         }
         break;
 
@@ -120,6 +139,12 @@ void loop() {
       case 'A':
         if (num > 0){
           num--;
+          if (!unlock){
+            sevseg.setNumber(resentpassword());
+          }
+          if (setpassword){
+            sevseg.setNumber(resentsetpassword());
+          }
         }
         break;
 
@@ -136,6 +161,7 @@ void loop() {
       default:;
     };
   }
+  sevseg.refreshDisplay();
 }
 
 //检查输入的四位密码是否正确，将密码输出
@@ -151,6 +177,9 @@ void check(){
       wrongnum = 0;             //正确输入后将错误数清零
       Serial.println("unlock");
     }
+  }
+  if  (wrongnum>=5){
+    tone(buzzerpin,494,5000*wrongnum);
   }
 }
 
@@ -195,4 +224,21 @@ void setled(){
   else {
     led('Y');
   }
+}
+
+//将输入数字字符合并为整数便于数码管输出
+int resentpassword(){
+  int resentpassword = 0;
+  for (int i=0;i<num;i++){
+    resentpassword = resentpassword*10 + password[i] - 48;
+  }
+  return resentpassword;
+}
+
+int resentsetpassword(){
+  int resentsetpassword = 0;
+  for (int i=0;i<num;i++){
+    resentsetpassword = resentsetpassword*10 + temppassword[i] - 48;
+  }
+  return resentsetpassword;
 }
