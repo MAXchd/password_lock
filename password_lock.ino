@@ -45,12 +45,10 @@ byte segpins[] = {31,23,49,43,45,29,51,47};   //段引脚
 byte hardwareConfig = COMMON_CATHODE;         //共阴极数码管
 
 
-
 void check();
 void led(char color);
 void setled();
-int resentpassword();
-int resentsetpassword();
+
 
 void setup() {
   Serial.begin(9600);
@@ -89,14 +87,22 @@ void loop() {
           if (num < 4){
             password[num] = key;
             num++;
-            sevseg.setNumber(resentpassword());
+            char showpassword[num];
+            for (int i=0;i<num;i++){
+              showpassword[i] = password[i];
+            }
+            sevseg.setChars(showpassword);
           }
         }
         if (setpassword){
           if (num < 4){
             temppassword[num] = key;
             num++;
-            sevseg.setNumber(resentsetpassword());
+            char showpassword[num];
+            for (int i=0;i<num;i++){
+              showpassword[i] = temppassword[i];
+            }
+            sevseg.setChars(showpassword);
           }
         }
         break;
@@ -140,10 +146,18 @@ void loop() {
         if (num > 0){
           num--;
           if (!unlock){
-            sevseg.setNumber(resentpassword());
+            char showpassword[num];
+            for (int i=0;i<num;i++){
+              showpassword[i] = password[i];
+            }
+            sevseg.setChars(showpassword);
           }
           if (setpassword){
-            sevseg.setNumber(resentsetpassword());
+            char showpassword[num];
+            for (int i=0;i<num;i++){
+              showpassword[i] = temppassword[i];
+            }
+            sevseg.setChars(showpassword);
           }
         }
         break;
@@ -224,21 +238,4 @@ void setled(){
   else {
     led('Y');
   }
-}
-
-//将输入数字字符合并为整数便于数码管输出
-int resentpassword(){
-  int resentpassword = 0;
-  for (int i=0;i<num;i++){
-    resentpassword = resentpassword*10 + password[i] - 48;
-  }
-  return resentpassword;
-}
-
-int resentsetpassword(){
-  int resentsetpassword = 0;
-  for (int i=0;i<num;i++){
-    resentsetpassword = resentsetpassword*10 + temppassword[i] - 48;
-  }
-  return resentsetpassword;
 }
